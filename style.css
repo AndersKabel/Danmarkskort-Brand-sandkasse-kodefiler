@@ -1,0 +1,70 @@
+/* Layout */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+#map { height: calc(100% - 58px); }
+
+/* Topbar */
+.topbar { display:flex; align-items:center; gap:1rem; padding:0.5rem 1rem; background:#0f172a; color:#fff; }
+.brand { font-weight:700; }
+
+.searchbar { position: relative; flex: 1; max-width: 720px; }
+#searchInput {
+  width: 100%;
+  padding: 0.65rem 2.4rem 0.65rem 0.8rem; /* plads til clear-knap */
+  border-radius: 10px;
+  border: 1px solid #334155;
+  outline: none;
+  color: #0f172a;
+  background:#fff;
+}
+
+/* Clear (x) */
+#clearBtn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: none; /* vises kun når der er tekst */
+}
+#clearBtn:hover { background:#cbd5e1; }
+
+/* Autocomplete */
+.results {
+  position:absolute;
+  top: 110%;
+  left:0;
+  right:0;
+  background:#fff;
+  border:1px solid #cbd5e1;
+  border-radius:10px;
+  overflow:hidden;
+  display:none;
+  z-index:1000;
+  max-height: 60vh;
+  overflow-y:auto;
+  color:#0f172a;
+}
+.results .item {
+  padding:0.5rem 0.75rem;
+  cursor:pointer;
+}
+.results .item:hover,
+.results .item.active {               /* aktivt valg med tastatur */
+  background:#f1f5f9;
+}
+
+/* Popup */
+.leaflet-popup-content { margin: 0.5rem; }
+.info .addr, .info .net { font-size: 0.95rem; }
+.info .netline { margin-top: 2px; word-break: break-word; }
+.logo-wrap { margin-top: 0.5rem; max-width: 220px; }
+.logo-wrap img { max-width: 100%; height: auto; display:block; }
