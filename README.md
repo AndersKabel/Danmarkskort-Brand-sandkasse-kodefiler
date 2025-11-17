@@ -1,2 +1,1 @@
-# Danmarkskort-Brand-sandkasse-kodefiler
-Sandkassen til Brand Danmarkskortet
+Sandkasse til Danmarkskort med funktioner beregnet til Brand
