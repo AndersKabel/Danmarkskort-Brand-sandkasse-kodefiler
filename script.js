@@ -1317,9 +1317,20 @@ function updateInfoBoxForeign(feature, lat, lon) {
  */
 async function fetchBBRData(adgangsadresseId) {
   try {
-    const resp = await fetch(`https://api.dataforsyningen.dk/bbrlight/bygninger?adgangsadresseid=${adgangsadresseId}`);
+    // Brug Datafordelerens BBR 2.1 service i stedet for den udfasede bbrlight API.
+    // Tjenesten kræver en aktiv tjenestebruger med brugernavn/adgangskode.
+    // Vi henter bygninger for et husnummer (adgangsadresse-ID) med status=6, som svarer til opførte bygninger.
+    const params = new URLSearchParams({
+      username: NUKALQTAFO,
+      password: Tina1977!,
+      format: 'JSON',
+      status: '6',
+      husnummer: adgangsadresseId
+    });
+    const url = `https://services.datafordeler.dk/BBR/BBRPublic/1/rest/bygning?${params.toString()}`;
+    const resp = await fetch(url);
     if (!resp.ok) {
-      throw new Error('BBR API-fejl: ' + resp.status);
+      throw new Error('BBR 2.1 API-fejl: ' + resp.status);
     }
     const data = await resp.json();
     return data;
