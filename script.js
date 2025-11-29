@@ -33,8 +33,8 @@ const ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU2ZTA
 // TODO: Indsæt dine Datafordeler BBR 2.1 loginoplysninger her (tjenestebruger)
 // For at hente BBR-data via Datafordeler skal du bruge en tjenestebruger med brugernavn og adgangskode.
 // Disse konstant-værdier skal udfyldes med dine egne legitimationsoplysninger og må ikke deles offentligt.
-const BBR_USERNAME = "NUKALQTAFO";
-const BBR_PASSWORD = "Tina1977!";
+const BBR_USERNAME = "";
+const BBR_PASSWORD = "";
 
 // Lag til at vise ruter fra ORS. Tilføjes til overlayMaps senere.
 var routeLayer = L.layerGroup();
