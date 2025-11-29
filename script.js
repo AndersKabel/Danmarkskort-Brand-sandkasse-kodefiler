@@ -806,7 +806,6 @@ fetch("https://api.dataforsyningen.dk/kommuner?format=geojson")
  */
 var dbSmsLayer     = L.layerGroup();
 var dbJournalLayer = L.layerGroup();
-var border25Layer  = L.layerGroup();
 var chargeMapLayer = L.layerGroup();
 
 // NYT: lag til at samle ekstra markører, når "Behold markører" er slået til
