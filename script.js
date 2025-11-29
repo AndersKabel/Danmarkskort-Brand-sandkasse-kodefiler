@@ -1289,22 +1289,20 @@ function updateInfoBoxForeign(feature, lat, lon) {
  */
 async function fetchBBRData(adgangsadresseId) {
   try {
-    if (!BBR_PROXY) {
-      console.warn("BBR_PROXY er ikke sat – BBR-data bliver ikke hentet.");
-      return null;
-    }
-
+    // Hent BBR-bygninger via Cloudflare-worker, så Datafordeler-login ikke ligger i browseren.
+    // Workeren forventer kun ?husnummer=<adgangsadresseId> og sørger selv for username/password, format og status.
     const url = `${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(adgangsadresseId)}`;
-    const resp = await fetch(url, { method: "GET" });
+
+    const resp = await fetch(url);
 
     if (!resp.ok) {
-      throw new Error("BBR proxy-fejl: " + resp.status);
+      throw new Error("BBR 2.1 proxy-fejl: " + resp.status);
     }
 
     const data = await resp.json();
     return data;
   } catch (e) {
-    console.error("BBR fetch error:", e);
+    console.error("BBR fetch error via proxy:", e);
     return null;
   }
 }
