@@ -1,70 +1,456 @@
-/* Layout */
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-#map { height: calc(100% - 58px); }
-
-/* Topbar */
-.topbar { display:flex; align-items:center; gap:1rem; padding:0.5rem 1rem; background:#0f172a; color:#fff; }
-.brand { font-weight:700; }
-
-.searchbar { position: relative; flex: 1; max-width: 720px; }
-#searchInput {
+/* ============================
+   KORT & KONTAINER
+============================ */
+#map {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  padding: 0.65rem 2.4rem 0.65rem 0.8rem; /* plads til clear-knap */
-  border-radius: 10px;
-  border: 1px solid #334155;
-  outline: none;
-  color: #0f172a;
-  background:#fff;
+  height: 100%;
 }
 
-/* Clear (x) */
-#clearBtn {
+#search-container {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.flex-row {
+  display: flex;
+  gap: 10px;
+}
+
+.search-wrapper {
+  position: relative;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+/* ============================
+   INPUTFELTER
+============================ */
+#search,
+#vej1,
+#vej2,
+#routeFrom,
+#routeTo,
+#routeVia {
+  width: 100%;
+  height: 40px;
+  font-size: 16px;
+  padding: 8px;
+  padding-right: 40px; /* plads til clear-knap */
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.flex-row .search-wrapper {
+  flex-grow: 1;
+  position: relative;
+  width: 100%;
+}
+
+/* ============================
+   CLEAR-KNAP
+============================ */
+.search-wrapper .clear-button {
   position: absolute;
-  right: 8px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 50%;
-  background: #e2e8f0;
-  color: #0f172a;
   font-size: 18px;
-  line-height: 1;
+  color: #666;
   cursor: pointer;
-  display: none; /* vises kun når der er tekst */
+  display: none;
 }
-#clearBtn:hover { background:#cbd5e1; }
-
-/* Autocomplete */
-.results {
-  position:absolute;
-  top: 110%;
-  left:0;
-  right:0;
-  background:#fff;
-  border:1px solid #cbd5e1;
-  border-radius:10px;
-  overflow:hidden;
-  display:none;
-  z-index:1000;
-  max-height: 60vh;
-  overflow-y:auto;
-  color:#0f172a;
+.search-wrapper .clear-button:hover {
+  color: #333;
 }
-.results .item {
-  padding:0.5rem 0.75rem;
-  cursor:pointer;
+.clear-button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #666;
+  cursor: pointer;
+  display: none;
 }
-.results .item:hover,
-.results .item.active {               /* aktivt valg med tastatur */
-  background:#f1f5f9;
+.clear-button:hover {
+  color: #333;
 }
 
-/* Popup */
-.leaflet-popup-content { margin: 0.5rem; }
-.info .addr, .info .net { font-size: 0.95rem; }
-.info .netline { margin-top: 2px; word-break: break-word; }
-.logo-wrap { margin-top: 0.5rem; max-width: 220px; }
-.logo-wrap img { max-width: 100%; height: auto; display:block; }
+/* ============================
+   RESULTATLISTER
+============================ */
+
+/* Hoved-søg følger bredden på søgecontaineren */
+#results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: white;
+  z-index: 2000;
+  display: none;
+  box-sizing: border-box;
+}
+
+/* Vej 1 / Vej 2 / Rute-felter har bred liste (som den "almindelige" liste) */
+#results-vej1,
+#results-vej2,
+#results-route-from,
+#results-route-to,
+#results-route-via {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 391px;
+  background: white;
+  z-index: 2000;
+  display: none;
+  box-sizing: border-box;
+}
+
+#results li,
+#results-vej1 li,
+#results-vej2 li,
+#results-route-from li,
+#results-route-to li,
+#results-route-via li {
+  padding: 8px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#results li:hover,
+#results-vej1 li:hover,
+#results-vej2 li:hover,
+#results-route-from li:hover,
+#results-route-to li:hover,
+#results-route-via li:hover {
+  background: #eaeaea;
+}
+.highlight {
+  background-color: #eaeaea !important;
+}
+
+/* ============================
+   INFO-BOKSE
+============================ */
+#sidebar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 400px;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+#infoContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#infoBox {
+  display: none;
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+#infoBox a {
+  margin-right: 10px;
+}
+
+#address {
+  margin: 0;
+  padding: 0;
+  font-weight: bold;
+  line-height: 1.6em;
+}
+
+#extra-info {
+  font-size: 16px;
+  color: #555;
+  margin-top: 5px;
+  line-height: 1em;
+}
+
+#streetviewLink {
+  color: #007bff;
+  text-decoration: none;
+}
+#streetviewLink:hover {
+  text-decoration: underline;
+}
+
+#skraafotoLink {
+  color: orange;
+  margin-left: 8px;
+  text-decoration: none;
+}
+#skraafotoLink:hover {
+  text-decoration: underline;
+}
+
+/* Flex container for StreetView + Skråfoto links */
+.info-upper-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+/* gør “Kommune … | Politikreds …” større */
+#infoBox #info-meta {
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+/* lidt luft under Eva.Net/Notes */
+#infoBox #info-actions {
+  margin-bottom: 6px;
+}
+
+#kildeangivelse {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: white;
+  padding: 5px;
+  font-size: 12px;
+  border-radius: 4px;
+  opacity: 0.8;
+}
+
+/* Statsvej info-boks */
+#statsvejInfoBox {
+  display: none;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+.hidden {
+  display: none;
+}
+
+/* Koordinatboks */
+#coordinateBox {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
+  display: none;
+  z-index: 1000;
+}
+
+/* KommuneOverlay – vises nederst i venstre hjørne med transparent baggrund */
+#kommuneOverlay {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: transparent;
+  color: #333;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 14px;
+  display: none;
+  z-index: 1000;
+}
+
+/* Leaflet fix: cursor */
+.leaflet-grab,
+.leaflet-container {
+  cursor: default !important;
+}
+
+/* Close-knapper */
+#statsvejCloseBtn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 18px;
+  cursor: pointer;
+  color: #666;
+}
+#statsvejCloseBtn:hover {
+  color: #333;
+}
+#infoCloseBtn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 18px;
+  color: #666;
+  cursor: pointer;
+}
+#infoCloseBtn:hover {
+  color: #333;
+}
+
+/* ============================
+   Distance Options knapper
+============================ */
+#distanceOptions {
+  position: absolute;
+  top: 10px;
+  right: 60px;
+  background: rgba(255,255,255,0.9);
+  padding: 5px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 900;
+}
+
+.distance-btn {
+  margin: 2px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ============================
+   Rute-panel
+============================ */
+
+/* Knapperne Start + Ryd i rute-panelet */
+.route-button-group {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  width: 80px;          /* samme samlede bredde som den gamle Start-knap */
+}
+
+.route-button-group .route-btn {
+  flex: 1;              /* del pladsen 50/50 */
+  height: 40px;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+}
+
+#routePanel {
+  margin-top: 8px;
+}
+
+.route-summary {
+  margin-top: 5px;
+  font-size: 13px;
+  color: #333;
+}
+
+/* Rute-indstillinger */
+.route-options {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(245, 245, 245, 0.9);
+  font-size: 13px;
+}
+
+.route-options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.route-options-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.route-options select,
+.route-options input[type="number"] {
+  height: 28px;
+  font-size: 13px;
+}
+
+.route-avoid-features {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.route-avoid-features legend {
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.route-avoid-features label {
+  font-weight: normal;
+}
+
+.route-avoid-areas-label {
+  flex-direction: column;
+  align-items: flex-start !important;
+}
+
+#routeAvoidPolygons {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  font-size: 12px;
+}
+
+/* ============================
+   Udland-checkbox under søg
+============================ */
+.search-options-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px 0;
+  font-size: 13px;
+}
+
+.checkbox-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.search-hint {
+  color: #666;
+  font-size: 12px;
+}
+/* ORS geocode tæller (Udland) */
+.ors-quota-indicator {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+}
