@@ -1216,8 +1216,15 @@ async function updateInfoBox(data, lat, lon) {
 
   // Hent og vis BBR-data for den valgte adresse
   try {
-    if (data.adgangsadresse && data.adgangsadresse.id) {
-      renderBBRInfo(data.adgangsadresse.id);
+    // Reverse-kald med struktur=flad har id på roden,
+    // mens andre kald evt. kan have id under data.adgangsadresse.id.
+    const husnummerId =
+      (data && data.id) ||
+      (data && data.adgangsadresse && data.adgangsadresse.id) ||
+      null;
+
+    if (husnummerId) {
+      renderBBRInfo(husnummerId);
     }
   } catch (err) {
     console.warn("BBR-data kunne ikke hentes:", err);
