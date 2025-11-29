@@ -1319,24 +1319,22 @@ function updateInfoBoxForeign(feature, lat, lon) {
  * Hent BBR-data for en adgangsadresse (bygninger) ved hjælp af bbrlight API.
  * Returnerer en liste af bygninger eller null ved fejl.
  */
+/**
+ * Hent BBR-data for en adgangsadresse (bygninger) via Cloudflare BBR-proxyen.
+ * Returnerer en liste af bygninger eller null ved fejl.
+ */
 async function fetchBBRData(adgangsadresseId) {
   try {
-    // Brug Datafordelerens BBR 2.1 service i stedet for den udfasede bbrlight API.
-    // Tjenesten kræver en aktiv tjenestebruger med brugernavn/adgangskode.
-    // Vi henter bygninger for et husnummer (adgangsadresse-ID) med status=6, som svarer til opførte bygninger.
-    const params = new URLSearchParams({
-      username: BBR_USERNAME,
-      password: BBR_PASSWORD,
-      format: "JSON",
-      status: "6",
-      husnummer: adgangsadresseId
-    });
+    if (!BBR_PROXY) {
+      console.warn("BBR_PROXY er ikke sat – BBR-data bliver ikke hentet.");
+      return null;
+    }
 
-    const url = `https://services.datafordeler.dk/BBR/BBRPublic/1/rest/bygning?${params.toString()}`;
-    const resp = await fetch(url);
+    const url = `${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(adgangsadresseId)}`;
+    const resp = await fetch(url, { method: "GET" });
 
     if (!resp.ok) {
-      throw new Error("BBR 2.1 API-fejl: " + resp.status);
+      throw new Error("BBR proxy-fejl: " + resp.status);
     }
 
     const data = await resp.json();
