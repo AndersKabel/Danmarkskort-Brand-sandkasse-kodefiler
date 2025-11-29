@@ -152,8 +152,6 @@
   width: 400px;
   z-index: 1000;
   box-sizing: border-box;
-  max-height: calc(100vh - 20px); /* så sidebaren aldrig bliver højere end vinduet */
-  overflow-y: auto;                /* gør indholdet (inkl. BBR-boksen) scrollbart */
 }
 
 #infoContainer {
