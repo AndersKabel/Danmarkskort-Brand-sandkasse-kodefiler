@@ -1,53 +1,173 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Brand – Danmarkskort</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Danmarkskort</title>
 
-  <link rel="stylesheet" href="style.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin defer></script>
+  <!-- Din egen style -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:,">
 
-  <script src="script.js" defer></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Turf.js til intersection + point-in-polygon -->
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+  <!-- Wellknown (WKT parser) -->
+  <script src="https://unpkg.com/wellknown@0.5.0/wellknown.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">🚒 Brand – Danmarkskort</div>
 
-    <div class="searchbar">
-      <input
-        id="searchInput"
-        type="text"
-        placeholder="Søg adresse (fx Oksenbjergvej 28, 7323 Give)"
-        autocomplete="off"
-        aria-autocomplete="list"
-        aria-controls="results"
-        aria-expanded="false"
-        aria-activedescendant=""
-      />
-      <button id="clearBtn" title="Ryd søgning" aria-label="Ryd søgning">×</button>
-      <div id="results" class="results" role="listbox"></div>
+  <div id="map"></div>
+
+  <div id="coordinateBox">Klik på kortet for at se koordinater</div>
+    
+  <div id="sidebar">
+    <div id="search-container">
+      <!-- ØVERSTE LINJE: Hoved-søg + Rute-knap -->
+      <div class="flex-row">
+  <div class="search-wrapper">
+    <input type="text" id="search" placeholder="Søg efter adresse eller sted...">
+    <span class="clear-button" id="clearSearch">&times;</span>
+  </div>
+  <button id="routeToggleBtn" style="width:80px; height:40px; font-size:14px; cursor:pointer;">
+    Rute
+  </button>
+</div>
+        
+      <!-- Udland-checkbox under søgefeltet -->
+      <div class="search-options-row">
+        <label class="checkbox-inline">
+          <input type="checkbox" id="enableForeignSearch">
+          Udland
+        </label>
+        <span class="search-hint">
+          Sæt flueben for at søge på udenlandske adresser
+        </span>
+          <span id="orsGeocodeQuota" class="ors-quota-indicator"></span>
+      </div>
+
+      <ul id="results"></ul>
+
+      <!-- RUTE-PANEL: Fra / Til / Via + Start/Ryd + indstillinger -->
+      <div id="routePanel" class="hidden">
+        <div class="flex-row">
+          <div class="search-wrapper">
+            <input type="text" id="routeFrom" placeholder="Fra adresse...">
+            <ul id="results-route-from" class="autocomplete-list"></ul>
+          </div>
+          <div class="search-wrapper">
+            <input type="text" id="routeTo" placeholder="Til adresse...">
+            <ul id="results-route-to" class="autocomplete-list"></ul>
+          </div>
+        </div>
+
+        <div class="flex-row">
+          <div class="search-wrapper">
+            <input type="text" id="routeVia" placeholder="Via (valgfri)...">
+            <ul id="results-route-via" class="autocomplete-list"></ul>
+          </div>
+
+          <!-- Start + Ryd deler den samme plads -->
+          <div class="route-button-group">
+            <button id="planRouteBtn" class="route-btn">
+              Start
+            </button>
+            <button id="clearRouteBtn" class="route-btn">
+              Ryd
+            </button>
+          </div>
+        </div>
+
+        <!-- Rute-indstillinger (profil + præference) -->
+        <div class="route-options">
+          <div class="route-options-row">
+            <label>
+              Profil:
+              <select id="routeProfile">
+                <option value="driving-car">Bil (personbil)</option>
+                <option value="driving-hgv">Lastbil</option>
+                <option value="cycling-regular">Cykel</option>
+                <option value="foot-walking">Gang</option>
+              </select>
+            </label>
+            <label>
+              Præference:
+              <select id="routePreference">
+                <option value="fastest">Hurtigste</option>
+                <option value="shortest">Korteste</option>
+                <option value="recommended" selected>Anbefalet</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div id="routeSummary" class="route-summary"></div>
+      </div>
+
+      <!-- VEJ 1 / VEJ 2 / FIND X -->
+      <div class="flex-row">
+        <div class="search-wrapper">
+          <input type="text" id="vej1" placeholder="Første vejnavn...">
+          <ul id="results-vej1" class="autocomplete-list"></ul>
+        </div>
+        <div class="search-wrapper">
+          <input type="text" id="vej2" placeholder="Andet vejnavn...">
+          <ul id="results-vej2" class="autocomplete-list"></ul>
+        </div>
+        <!-- "Find X" -->
+        <button id="findKrydsBtn" style="width:80px; height:40px; font-size:14px; cursor:pointer;">
+          Find X
+        </button>
+      </div>
+      
+      <div id="kildeangivelse"></div>
     </div>
-  </header>
 
-  <main id="map"></main>
-
-  <!-- Popup-skabelon -->
-  <template id="info-template">
-    <div class="info">
-      <div class="addr"><strong>Valgt adresse</strong><br><span data-bind="address"></span></div>
-      <hr />
-      <div class="net">
-        <strong>Netselskab</strong><br>
-        <div class="netline" data-bind="name"></div>
-        <div class="netline" data-bind="phone"></div>
-        <a class="netline" data-bind="website" target="_blank" rel="noopener"></a>
-        <div class="logo-wrap"><img data-bind="logo" alt="Netselskab logo" /></div>
+    <!-- InfoContainer nu inden i sidebar for at stakke under søgeboksen -->
+    <div id="infoContainer">
+      <!-- Én samlet infoboks – alle oplysninger kommer her -->
+      <div id="infoBox">
+        <div class="info-upper-box">
+          <a id="streetviewLink" href="#" target="_blank">Åbn i Google Street View</a>
+          <a id="skraafotoLink" href="#" target="_blank" style="display:none;">Åbn i skråfoto</a>
+        </div>
+        <div class="info-lower-box">
+          <p id="address"></p>
+          <p id="extra-info"></p>
+        </div>
+        <span id="infoCloseBtn" class="close-button">&times;</span>
+      </div>
+      <div id="statsvejInfoBox" class="hidden">
+        <div class="info-upper-box"></div>
+        <div class="info-lower-box">
+          <p id="statsvejInfo"></p>
+        </div>
+        <span id="statsvejCloseBtn" class="close-button">&times;</span>
       </div>
     </div>
-  </template>
+  </div>
+      
+  <!-- Distance Options med knapper -->
+  <div id="distanceOptions" class="distance-options">
+    <button id="btn10" class="distance-btn">10 km</button>
+    <button id="btn25" class="distance-btn">25 km</button>
+    <button id="btn50" class="distance-btn">50 km</button>
+    <button id="btn100" class="distance-btn">100 km</button>
+  </div>
+
+  <!-- Proj4js til koordinat-transformation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+
+  <!-- Din egen script-fil -->
+  <script src="script.js"></script>
+  
+  <!-- Overlay til kommunekode og vejkode (gennemsigtigt designet i CSS) -->
+  <div id="kommuneOverlay"></div>
 </body>
 </html>
