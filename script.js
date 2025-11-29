@@ -30,11 +30,10 @@ const VD_PROXY = "https://vd-proxy.anderskabel8.workers.dev";
 
 // TODO: Indsæt din ORS API-nøgle her
 const ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU2ZTA5ODhhNDE5MDQ1MjNiY2QwM2QyZjcyNWViZmU5IiwiaCI6Im11cm11cjY0In0=";
-// TODO: Indsæt dine Datafordeler BBR 2.1 loginoplysninger her (tjenestebruger)
-// For at hente BBR-data via Datafordeler skal du bruge en tjenestebruger med brugernavn og adgangskode.
-// Disse konstant-værdier skal udfyldes med dine egne legitimationsoplysninger og må ikke deles offentligt.
-const BBR_USERNAME = "";
-const BBR_PASSWORD = "";
+// Cloudflare proxy til Datafordeler BBR (bygning)
+//  - indeholder brugernavn/adgangskode som secrets i selve Workeren
+const BBR_PROXY = "https://bbr-proxy.anderskabel8.workers.dev";
+
 
 // Lag til at vise ruter fra ORS. Tilføjes til overlayMaps senere.
 var routeLayer = L.layerGroup();
