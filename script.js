@@ -1326,21 +1326,24 @@ async function fetchBBRData(adgangsadresseId) {
     // Tjenesten kræver en aktiv tjenestebruger med brugernavn/adgangskode.
     // Vi henter bygninger for et husnummer (adgangsadresse-ID) med status=6, som svarer til opførte bygninger.
     const params = new URLSearchParams({
-      username: NUKALQTAFO,
-      password: Tina1977!,
-      format: 'JSON',
-      status: '6',
+      username: BBR_USERNAME,
+      password: BBR_PASSWORD,
+      format: "JSON",
+      status: "6",
       husnummer: adgangsadresseId
     });
+
     const url = `https://services.datafordeler.dk/BBR/BBRPublic/1/rest/bygning?${params.toString()}`;
     const resp = await fetch(url);
+
     if (!resp.ok) {
-      throw new Error('BBR 2.1 API-fejl: ' + resp.status);
+      throw new Error("BBR 2.1 API-fejl: " + resp.status);
     }
+
     const data = await resp.json();
     return data;
   } catch (e) {
-    console.error('BBR fetch error:', e);
+    console.error("BBR fetch error:", e);
     return null;
   }
 }
