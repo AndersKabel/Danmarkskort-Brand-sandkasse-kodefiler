@@ -1060,7 +1060,13 @@ map.on('click', function(e) {
 /*
  * updateInfoBox for danske adresser
  */
-async function updateInfoBox(data, lat, lon) {
+/*
+ * updateInfoBox for danske adresser
+ *  - data: objekt fra Dataforsyningen (adgangsadresse eller adresse)
+ *  - lat/lon: koordinater i WGS84
+ *  - enhedsLabel (valgfri): fuld enhedsadresse inkl. etage/dør til visning
+ */
+async function updateInfoBox(data, lat, lon, enhedsLabel) {
   const streetviewLink = document.getElementById("streetviewLink");
   const addressEl      = document.getElementById("address");
   const extraInfoEl    = document.getElementById("extra-info");
@@ -1070,7 +1076,9 @@ async function updateInfoBox(data, lat, lon) {
   let adresseStr, vejkode, kommunekode;
   let evaFormat, notesFormat;
   
+  // Byg grund-adresse (uden etage/dør) ud fra data
   if (data.adgangsadresse) {
+    // Typisk når data kommer fra /adresser eller /adgangsadresser
     adresseStr = data.adgangsadresse.adressebetegnelse || 
                  `${data.adgangsadresse.vejnavn || ""} ${data.adgangsadresse.husnr || ""}, ${data.adgangsadresse.postnr || ""} ${data.adgangsadresse.postnrnavn || ""}`;
     evaFormat   = `${data.adgangsadresse.vejnavn || ""},${data.adgangsadresse.husnr || ""},${data.adgangsadresse.postnr || ""}`;
@@ -1078,21 +1086,29 @@ async function updateInfoBox(data, lat, lon) {
     vejkode     = data.adgangsadresse.vejkode || "?";
     kommunekode = data.adgangsadresse.kommunekode || "?";
   } else if (data.adressebetegnelse) {
+    // Flad struktur fra fx reverse-kald
     adresseStr  = data.adressebetegnelse;
     evaFormat   = "?, ?, ?";
     notesFormat = "?, ?, ?";
     vejkode     = data.vejkode     || "?";
     kommunekode = data.kommunekode || "?";
   } else {
+    // Fallback hvis strukturen er mere simpel
     adresseStr  = `${data.vejnavn || "?"} ${data.husnr || ""}, ${data.postnr || "?"} ${data.postnrnavn || ""}`;
     evaFormat   = `${data.vejnavn || ""},${data.husnr || ""},${data.postnr || ""}`;
     notesFormat = `${data.vejnavn || ""} ${data.husnr || ""}, ${data.postnr || ""} ${data.postnrnavn || ""}`;
     vejkode     = data.vejkode     || "?";
     kommunekode = data.kommunekode || "?";
   }
+
+  // Hvis vi har en enheds-adresse (med etage/dør), så brug den som visningstekst
+  const displayAddress =
+    (typeof enhedsLabel === "string" && enhedsLabel.trim().length > 0)
+      ? enhedsLabel
+      : adresseStr;
   
   streetviewLink.href = `https://www.google.com/maps?q=&layer=c&cbll=${lat},${lon}`;
-  addressEl.textContent = adresseStr;
+  addressEl.textContent = displayAddress;
 
   extraInfoEl.innerHTML = "";
   extraInfoEl.insertAdjacentHTML(
@@ -1216,12 +1232,19 @@ async function updateInfoBox(data, lat, lon) {
 
   // Hent og vis BBR-data for den valgte adresse
   try {
-    // Reverse-kald med struktur=flad har id på roden,
-    // mens andre kald evt. kan have id under data.adgangsadresse.id.
-    const husnummerId =
-      (data && data.id) ||
-      (data && data.adgangsadresse && data.adgangsadresse.id) ||
-      null;
+    let husnummerId = null;
+
+    // Foretræk eksplicit adgangsadresse-id hvis det findes
+    if (data && data.adgangsadresse && data.adgangsadresse.id) {
+      husnummerId = data.adgangsadresse.id;
+    } else if (data && (data.husnummerid || data.husnummerId)) {
+      husnummerId = data.husnummerid || data.husnummerId;
+    } else if (data && (data.adgangsadresseid || data.adgangsadresseId)) {
+      husnummerId = data.adgangsadresseid || data.adgangsadresseId;
+    } else if (data && data.id) {
+      // Fallback – virker for adgangsadresser/reverse, hvor id er husnummer-id
+      husnummerId = data.id;
+    }
 
     if (husnummerId) {
       renderBBRInfo(husnummerId);
