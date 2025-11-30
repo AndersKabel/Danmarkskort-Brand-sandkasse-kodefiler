@@ -2380,8 +2380,17 @@ function doSearchStrandposter(query) {
  * doSearch => kombinerer adresser, stednavne, specialsteder,
  * navngivne veje, strandposter og udenlandske ORS-adresser
  */
+/*
+ * doSearch => kombinerer adresser (enheds-adresser), stednavne, specialsteder,
+ * navngivne veje, strandposter og udenlandske ORS-adresser
+ *
+ * Adresser hentes nu via /adresser/autocomplete, så forslagene indeholder
+ * etage/dør. Ved klik slås den fulde adresse op via /adresser/{id}, og
+ * husnummer-id bruges til BBR-opslag.
+ */
 function doSearch(query, listElement) {
-  let addrUrl = `https://api.dataforsyningen.dk/adgangsadresser/autocomplete?q=${encodeURIComponent(query)}`;
+  // Enhedsadresser i stedet for adgangsadresser
+  let addrUrl = `https://api.dataforsyningen.dk/adresser/autocomplete?q=${encodeURIComponent(query)}&per_side=20`;
   let stedUrl = `https://api.dataforsyningen.dk/rest/gsearch/v2.0/stednavn?q=${encodeURIComponent(query)}&limit=100&token=a63a88838c24fc85d47f32cde0ec0144`;
   const queryWithWildcard = query.trim().split(/\s+/).map(w => w + "*").join(" ");
   let roadUrl = `https://api.dataforsyningen.dk/navngivneveje?q=${encodeURIComponent(queryWithWildcard)}&per_side=20`;
@@ -2425,7 +2434,7 @@ function doSearch(query, listElement) {
     strandPromise = Promise.resolve([]);
     orsPromise    = geocodeORSForSearch(query);
   } else {
-    // Normal tilstand: kun danske kilder, ingen ORS
+    // Normal tilstand: danske kilder, ingen ORS
     addrPromise = fetch(addrUrl)
       .then(r => r.json())
       .catch(err => { console.error("Adresser fejl:", err); return []; });
@@ -2456,12 +2465,33 @@ function doSearch(query, listElement) {
     searchItems = [];
     searchCurrentIndex = -1;
 
-    // Adresser (Dataforsyningen)
-    let addrResults = (addrData || []).map(item => ({
-      type: "adresse",
-      tekst: item.tekst,
-      adgangsadresse: item.adgangsadresse
-    }));
+    // Adresser (enheds-adresser fra Dataforsyningen)
+    let addrResults = (addrData || []).map(item => {
+      // /adresser/autocomplete returnerer normalt { tekst, adresse: { ... } }
+      const adresseObj = item.adresse || item;
+      const tekst = item.tekst ||
+                    adresseObj.tekst ||
+                    adresseObj.adressebetegnelse ||
+                    "";
+      const enhedsId = adresseObj.id || null;
+
+      let adgangsadresseId = null;
+      if (adresseObj.adgangsadresse && adresseObj.adgangsadresse.id) {
+        adgangsadresseId = adresseObj.adgangsadresse.id;
+      } else if (adresseObj.adgangsadresseid) {
+        adgangsadresseId = adresseObj.adgangsadresseid;
+      } else if (adresseObj.husnummerid) {
+        adgangsadresseId = adresseObj.husnummerid;
+      }
+
+      return {
+        type: "adresse",
+        tekst: tekst,
+        adresse: adresseObj,
+        enhedsId: enhedsId,
+        adgangsadresseId: adgangsadresseId
+      };
+    });
 
     // Stednavne
     let stedResults = [];
@@ -2514,7 +2544,7 @@ function doSearch(query, listElement) {
       ];
     }
 
-    // Sortering
+    // Sortering (som før)
     combined.sort((a, b) => {
       const aIsName = (a.type === "stednavn" || a.type === "navngivenvej" || a.type === "custom" || a.type === "ors_foreign");
       const bIsName = (b.type === "stednavn" || b.type === "navngivenvej" || b.type === "custom" || b.type === "ors_foreign");
@@ -2539,27 +2569,52 @@ function doSearch(query, listElement) {
       }
 
       li.addEventListener("click", function() {
-        if (obj.type === "adresse" && obj.adgangsadresse && obj.adgangsadresse.id) {
-          fetch(`https://api.dataforsyningen.dk/adgangsadresser/${obj.adgangsadresse.id}`)
+        // ENHEDSADRESSE: hent fuld adresse via /adresser/{id}
+        if (obj.type === "adresse" && (obj.enhedsId || (obj.adresse && obj.adresse.id))) {
+          const adresseId = obj.enhedsId || (obj.adresse && obj.adresse.id);
+          if (!adresseId) {
+            console.error("Ingen enheds-adresse-id tilgængelig for adresse-resultat");
+            return;
+          }
+
+          fetch(`https://api.dataforsyningen.dk/adresser/${adresseId}`)
             .then(r => r.json())
-            .then(addressData => {
-              let [lon, lat] = addressData.adgangspunkt.koordinater;
+            .then(adresseData => {
+              // Koordinater tages fra adgangsadresse.adgangspunkt.koordinater
+              let coords = null;
+              if (adresseData.adgangsadresse &&
+                  adresseData.adgangsadresse.adgangspunkt &&
+                  Array.isArray(adresseData.adgangsadresse.adgangspunkt.koordinater)) {
+                coords = adresseData.adgangsadresse.adgangspunkt.koordinater;
+              } else if (adresseData.adgangsadresse &&
+                         Array.isArray(adresseData.adgangsadresse.koordinater)) {
+                // Fallback hvis strukturen er anderledes
+                coords = adresseData.adgangsadresse.koordinater;
+              }
+
+              if (!coords || coords.length < 2) {
+                console.error("Kunne ikke finde koordinater for adresse:", adresseData);
+                return;
+              }
+
+              const lon = coords[0];
+              const lat = coords[1];
+
               setCoordinateBox(lat, lon);
+              // Vis enheds-adressen (inkl. etage/dør) i titel-linjen
               placeMarkerAndZoom([lat, lon], obj.tekst);
-              let revUrl = `https://api.dataforsyningen.dk/adgangsadresser/reverse?x=${lon}&y=${lat}&struktur=flad`;
-              fetch(revUrl)
-                .then(r => r.json())
-                .then(reverseData => {
-                  updateInfoBox(reverseData, lat, lon);
-                })
-                .catch(err => console.error("Reverse geocoding fejl:", err));
-              updateInfoBox(addressData, lat, lon);
+
+              // Opdater infoboksen:
+              //  - adresseData giver adgang til adgangsadresse.id (husnummer-id til BBR)
+              //  - obj.tekst bruges som visnings-tekst (enheds-adresse)
+              updateInfoBox(adresseData, lat, lon, obj.tekst);
+
               resultsList.innerHTML = "";
               resultsList.style.display = "none";
               vej1List.innerHTML = "";
               vej2List.innerHTML = "";
             })
-            .catch(err => console.error("Fejl i /adgangsadresser/{id}:", err));
+            .catch(err => console.error("Fejl i /adresser/{id}:", err));
         } else if (obj.type === "stednavn" && obj.bbox && obj.bbox.coordinates && obj.bbox.coordinates[0] && obj.bbox.coordinates[0].length > 0) {
           let [x, y] = obj.bbox.coordinates[0][0];
           placeMarkerAndZoom([x, y], obj.navn);
