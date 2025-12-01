@@ -2589,6 +2589,17 @@ function doSearch(query, listElement) {
           fetch(`https://api.dataforsyningen.dk/adresser/${adresseId}`)
             .then(r => r.json())
             .then(adresseData => {
+              // NYT – sæt husnummerId eksplicit til brug for BBR-opslag
+              if (!adresseData.husnummerId) {
+                if (adresseData.husnummerid) {
+                  adresseData.husnummerId = adresseData.husnummerid;
+                } else if (adresseData.adgangsadresseid) {
+                  adresseData.husnummerId = adresseData.adgangsadresseid;
+                } else if (adresseData.adgangsadresse && adresseData.adgangsadresse.id) {
+                  adresseData.husnummerId = adresseData.adgangsadresse.id;
+                }
+              }
+
               // Koordinater tages fra adgangsadresse.adgangspunkt.koordinater
               let coords = null;
               if (adresseData.adgangsadresse &&
@@ -2614,7 +2625,7 @@ function doSearch(query, listElement) {
               placeMarkerAndZoom([lat, lon], obj.tekst);
 
               // Opdater infoboksen:
-              //  - adresseData giver adgang til adgangsadresse.id (husnummer-id til BBR)
+              //  - adresseData giver adgang til husnummerId til BBR
               //  - obj.tekst bruges som visnings-tekst (enheds-adresse)
               updateInfoBox(adresseData, lat, lon, obj.tekst);
 
