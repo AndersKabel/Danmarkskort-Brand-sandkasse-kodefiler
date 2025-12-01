@@ -1234,15 +1234,24 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
   try {
     let husnummerId = null;
 
-    // Foretræk eksplicit adgangsadresse-id hvis det findes
-    if (data && data.adgangsadresse && data.adgangsadresse.id) {
-      husnummerId = data.adgangsadresse.id;
-    } else if (data && (data.husnummerid || data.husnummerId)) {
-      husnummerId = data.husnummerid || data.husnummerId;
-    } else if (data && (data.adgangsadresseid || data.adgangsadresseId)) {
+    // 1) Foretræk eksplicit husnummer-id (fx når vi har fået det direkte med fra enhedsadresse)
+    if (data && (data.husnummerId || data.husnummerid)) {
+      husnummerId = data.husnummerId || data.husnummerid;
+    }
+    // 2) Ellers se om husnummer-id ligger under adgangsadresse-objektet
+    else if (data && data.adgangsadresse && (data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid)) {
+      husnummerId = data.adgangsadresse.husnummerId || data.adgangsadresse.husnummerid;
+    }
+    // 3) Ellers brug adgangsadresseid-felter fra flade strukturer (/adresser)
+    else if (data && (data.adgangsadresseid || data.adgangsadresseId)) {
       husnummerId = data.adgangsadresseid || data.adgangsadresseId;
-    } else if (data && data.id) {
-      // Fallback – virker for adgangsadresser/reverse, hvor id er husnummer-id
+    }
+    // 4) Ellers brug adgangsadresse.id (klassisk DAR-id)
+    else if (data && data.adgangsadresse && data.adgangsadresse.id) {
+      husnummerId = data.adgangsadresse.id;
+    }
+    // 5) Til sidst: for reverse-/adgangsadresser er data.id typisk husnummer-id
+    else if (data && data.id) {
       husnummerId = data.id;
     }
 
