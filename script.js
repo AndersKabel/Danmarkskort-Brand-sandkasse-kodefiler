@@ -1322,25 +1322,23 @@ function updateInfoBoxForeign(feature, lat, lon) {
  * Hent BBR-data for en adgangsadresse (bygninger) via Cloudflare BBR-proxyen.
  * Returnerer en liste af bygninger eller null ved fejl.
  */
-async function fetchBBRData(adgangsadresseId) {
-  try {
-    // Hent BBR-bygninger via Cloudflare-worker, så Datafordeler-login ikke ligger i browseren.
-    // Workeren forventer kun ?husnummer=<adgangsadresseId> og sørger selv for username/password, format og status.
-    const url = `${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(adgangsadresseId)}`;
-
-    const resp = await fetch(url);
-
-    if (!resp.ok) {
-      throw new Error("BBR 2.1 proxy-fejl: " + resp.status);
+async function fetchBBRData(bbrId) {
+    try {
+        // Hent BBR-bygninger via Cloudflare-worker, så Datafordeler-login ikke ligger i browseren.
+        // Workeren forventer nu ?id=<bbrId> og sørger selv for username/password, format og status.
+        const url = `${BBR_PROXY}/bygning?id=${encodeURIComponent(bbrId)}`;
+        const resp = await fetch(url);
+        if (!resp.ok) {
+            throw new Error("BBR 2.1 proxy-fejl: " + resp.status);
+        }
+        const data = await resp.json();
+        return data;
+    } catch (e) {
+        console.error("BBR fetch error via proxy:", e);
+        return null;
     }
-
-    const data = await resp.json();
-    return data;
-  } catch (e) {
-    console.error("BBR fetch error via proxy:", e);
-    return null;
-  }
 }
+
 // Opslagstabeller til BBR-koder (kilde: bbr.dk/kodelister)
 const BBR_TAGDAEKNING = {
   1: "Tagpap med lille hældning",
