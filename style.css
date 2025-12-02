@@ -528,3 +528,23 @@
   font-size: 14px;
   color: #333;
 }
+/* ============================
+   BBR bygningsikoner på kortet
+============================ */
+.bbr-building-icon-wrapper {
+  border: none;
+  background: transparent;
+}
+
+.bbr-building-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 128, 0, 0.85);
+  color: #fff;
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 24px;
+  text-align: center;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+}
