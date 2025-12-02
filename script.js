@@ -1326,13 +1326,21 @@ function updateInfoBoxForeign(feature, lat, lon) {
  */
 async function fetchBBRData(bbrId) {
     try {
+        if (!bbrId) {
+            console.warn("fetchBBRData kaldt uden bbrId/husnummerId");
+            return null;
+        }
+
         // Hent BBR-bygninger via Cloudflare-worker, så Datafordeler-login ikke ligger i browseren.
-        // Workeren forventer nu ?id=<bbrId> og sørger selv for username/password, format og status.
-        const url = `${BBR_PROXY}/bygning?id=${encodeURIComponent(bbrId)}`;
+        // Workeren forventer nu ?husnummer=<bbrId> (DAR husnummer-id / adgangsadresse-id)
+        // og sørger selv for username/password, format og status.
+        const url = `${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(bbrId)}`;
+
         const resp = await fetch(url);
         if (!resp.ok) {
             throw new Error("BBR 2.1 proxy-fejl: " + resp.status);
         }
+
         const data = await resp.json();
         return data;
     } catch (e) {
