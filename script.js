@@ -1396,6 +1396,11 @@ function updateInfoBoxForeign(feature, lat, lon) {
   // Skjul BBR-boksen for udenlandske adresser
   const bbrBox = document.getElementById("bbrInfoBox");
   if (bbrBox) {
+      const bfeBox = document.getElementById("bfeInfoBox");
+  if (bfeBox) {
+    bfeBox.classList.add("hidden");
+  }
+
     bbrBox.classList.add("hidden");
   }
 
