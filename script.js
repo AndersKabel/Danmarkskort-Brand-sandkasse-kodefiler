@@ -18,6 +18,41 @@ const VD_PROXY = "https://vd-proxy.anderskabel8.workers.dev";
 // Cloudflare proxy til BBR (bygning)
 const BBR_PROXY = "https://bbr-proxy.anderskabel8.workers.dev";
 
+// Datafordeler login (bruges til DAR_BFE_Public m.m.).
+// UDFYLD SELV brugernavn og kodeord lokalt – læg dem aldrig i et offentligt repo.
+const DATAFORDELER_USERNAME = "AndersKabel1K4T3";
+const DATAFORDELER_PASSWORD = "Tina1977";
+
+/**
+ * Hjælper: byg Datafordeler-URL med username/password og ekstra query-parametre.
+ *
+ * Eksempel:
+ *   const url = buildDatafordelerUrl(
+ *     "https://services.datafordeler.dk/DAR/DAR_BFE_Public/1/rest/husnummerTilBygningBfe",
+ *     { husnummerid: "..." , format: "json" }
+ *   );
+ */
+function buildDatafordelerUrl(baseUrl, extraParams) {
+  const url = new URL(baseUrl);
+
+  if (DATAFORDELER_USERNAME) {
+    url.searchParams.set("username", DATAFORDELER_USERNAME);
+  }
+  if (DATAFORDELER_PASSWORD) {
+    url.searchParams.set("password", DATAFORDELER_PASSWORD);
+  }
+
+  if (extraParams && typeof extraParams === "object") {
+    Object.keys(extraParams).forEach(function(key) {
+      const value = extraParams[key];
+      if (value === undefined || value === null || value === "") return;
+      url.searchParams.set(key, String(value));
+    });
+  }
+
+  return url.toString();
+}
+
 /*
  * OpenRouteService integration
  *
