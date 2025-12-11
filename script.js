@@ -1271,7 +1271,6 @@ async function updateInfoBox(data, lat, lon, enhedsLabel) {
     console.warn("BBR-data kunne ikke hentes:", err);
   }
 }
-
 /*
  * updateInfoBoxForeign – ORS-adresser i udlandet
  */
@@ -1297,7 +1296,7 @@ function updateInfoBoxForeign(feature, lat, lon) {
   const evaFormat   = `${vejnavn},${husnr},${postnr}`;
   const notesFormat = `${vejnavn} ${husnr}, ${postnr} ${by}`;
 
-  streetviewLink.href = `https://www.google.com/maps?q=&layer=c&cbll=${lat},${lon}`;
+  streetviewLink.href   = `https://www.google.com/maps?q=&layer=c&cbll=${lat},${lon}`;
   addressEl.textContent = label;
 
   extraInfoEl.innerHTML = `
@@ -1306,18 +1305,13 @@ function updateInfoBoxForeign(feature, lat, lon) {
 
   // Ingen skråfoto / kommune / statsvej i udlandet
   skråfotoLink.style.display = "none";
-  overlay.style.display = "none";
-  statsvejInfoEl.innerHTML = "";
-  statsvejBox.style.display = "none";
+  overlay.style.display       = "none";
+  statsvejInfoEl.innerHTML    = "";
+  statsvejBox.style.display   = "none";
 
   // Skjul BBR-boksen for udenlandske adresser
   const bbrBox = document.getElementById("bbrInfoBox");
   if (bbrBox) {
-      const bfeBox = document.getElementById("bfeInfoBox");
-  if (bfeBox) {
-    bfeBox.classList.add("hidden");
-  }
-
     bbrBox.classList.add("hidden");
   }
 
