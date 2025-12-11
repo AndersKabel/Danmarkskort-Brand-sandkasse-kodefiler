@@ -2040,6 +2040,7 @@ clearBtn.addEventListener("click", function() {
   clearBtn.style.display = "none";
   document.getElementById("infoBox").style.display = "none";
   document.getElementById("statsvejInfoBox").style.display = "none";
+  hideBBRInfo();
   resetCoordinateBox();
   resetInfoBox();
   searchInput.focus();
