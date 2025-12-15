@@ -1775,7 +1775,7 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
   bbrBox.style.display = "block";
 
   fetchBBRData(bbrId, bfeNumber)
-    .then(data => {
+    .then(async data => {
       // Ingen data
       if (!data || data.length === 0) {
         bbrBox.innerHTML = `
@@ -1957,6 +1957,72 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
           m.addTo(bbrBuildingsLayer);
         }
       });
+
+      // --- Ejendomsbeliggenhed (Ejendomsdata pr. BFE) ---
+      try {
+        const bfeList = collectBfeNumbersFromBuildings(data, bfeNumber);
+        if (bfeList && bfeList.length > 0) {
+          const ejendomsListe = await fetchEjendomsbeliggenhedForBFE(bfeList);
+          if (ejendomsListe && ejendomsListe.length > 0) {
+            html += `<details open>
+  <summary>Ejendomsoplysninger (Ejendomsbeliggenhed)</summary>
+`;
+            ejendomsListe.forEach((ejd, idx2) => {
+              const bfeVal = findFirstMatchingField(ejd, /bfe.*nummer/i);
+              const matrikel = findFirstMatchingField(ejd, /matrikel.*betegnelse/i) || findFirstMatchingField(ejd, /matrikel/i);
+              const ejerlav = findFirstMatchingField(ejd, /ejerlav.*navn/i) || findFirstMatchingField(ejd, /ejerlav/i);
+              const komNavn = findFirstMatchingField(ejd, /kommu.*navn/i);
+              const komKode = findFirstMatchingField(ejd, /kommu.*kode/i);
+              const vejnavnEjd = findFirstMatchingField(ejd, /vej.*navn/i);
+
+              const headerParts = [];
+              headerParts.push("Ejendom " + String(idx2 + 1));
+              if (bfeVal != null) {
+                headerParts.push("BFE: " + String(bfeVal));
+              }
+              if (matrikel != null) {
+                headerParts.push(String(matrikel));
+              }
+
+              html += "<details>";
+              html += "<summary>" + headerParts.join(" – ") + "</summary>";
+              html += "<ul>";
+              if (bfeVal != null) {
+                html += "<li><strong>BFE-nummer:</strong> " + String(bfeVal) + "</li>";
+              }
+              if (matrikel != null) {
+                html += "<li><strong>Matrikel:</strong> " + String(matrikel) + "</li>";
+              }
+              if (ejerlav != null) {
+                html += "<li><strong>Ejerlav:</strong> " + String(ejerlav) + "</li>";
+              }
+              if (vejnavnEjd != null) {
+                html += "<li><strong>Vejnavn:</strong> " + String(vejnavnEjd) + "</li>";
+              }
+              if (komNavn != null || komKode != null) {
+                let komTekst = "";
+                if (komNavn != null) {
+                  komTekst = String(komNavn);
+                }
+                if (komKode != null) {
+                  if (komTekst !== "") {
+                    komTekst += " (" + String(komKode) + ")";
+                  } else {
+                    komTekst = String(komKode);
+                  }
+                }
+                html += "<li><strong>Kommune:</strong> " + komTekst + "</li>";
+              }
+              html += "</ul>";
+              html += "<details><summary>Vis rå Ejendomsbeliggenhed-data</summary><pre>" + JSON.stringify(ejd, null, 2) + "</pre></details>";
+              html += "</details>";
+            });
+            html += "</details>";
+          }
+        }
+      } catch (e) {
+        console.error("Fejl ved hentning af Ejendomsbeliggenhed:", e);
+      }
 
       html += "</div>"; // .bbr-content slut
 
