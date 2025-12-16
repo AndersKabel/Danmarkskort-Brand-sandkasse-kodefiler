@@ -1887,9 +1887,8 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
 
   fetchBBRData(bbrId, bfeNumber)
     .then(async data => {
-            // Kombinér bygninger med tekniske anlæg fra BBR-proxy
-      // VIGTIGT: tekniske anlæg skal hentes på BFE-nummer (ikke husnummer/adgangsadresseid),
-      // og BFE-nummeret skal derfor udledes fra de bygninger vi allerede har hentet.
+      // ----- TEKNISKE ANLÆG -----
+      // VIGTIGT: tekniske anlæg hentes på BFE-nummer.
       const bfeListForTekniske = collectBfeNumbersFromBuildings(data, bfeNumber);
 
       let tekniske = [];
@@ -1901,11 +1900,11 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
         }
       }
 
-      const combined = (Array.isArray(data) ? data : []).concat(
-        Array.isArray(tekniske) ? tekniske : []
-      );
-      // Ingen data
-      if (!combined || combined.length === 0) {
+      const buildingsOnly = Array.isArray(data) ? data : [];
+      const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
+
+      // Hvis der hverken er bygninger eller tekniske anlæg
+      if (buildingsOnly.length === 0 && tekniskeOnly.length === 0) {
         bbrBox.innerHTML = `
   <div class="bbr-header" style="position: relative;">
     <span class="bbr-title">BBR – bygninger på adressen</span>
@@ -1929,11 +1928,10 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
   <div class="bbr-content">
 `;
 
-      combined.forEach((b, idx) => {
-        // Hvis proxien på et tidspunkt returnerer { bygning: {...} }, så brug bygning-delen.
+      // ----- BYGNINGER (som før) -----
+      buildingsOnly.forEach((b, idx) => {
         const building = (b && b.bygning) ? b.bygning : b;
 
-        // Basisfelter (forsøg først med de konkrete BBR 2.1-felter, derefter generisk fallback)
         const bygningsnr = building["byg007Bygningsnummer"] ?? getBBRValue(building, "bygningsnr", /bygningsnr|bygningsnummer/i);
         const anvKode = building["byg021BygningensAnvendelse"] ?? getBBRCode(building, "bygningsanvendelse", /anvendelse/i);
         const anvTekst = anvKode != null ? describeBBRCode(BBR_BYGNINGSANVENDELSE, anvKode) : null;
@@ -1949,19 +1947,16 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
         const supVarmeKode = building["byg058SupplerendeVarme"] ?? getBBRCode(building, "supplerendeVarme", /supplerende.*varme/i);
         const supVarmeTekst = supVarmeKode != null ? describeBBRCode(BBR_SUPPLERENDE_VARME, supVarmeKode) : null;
 
-        // Etager og arealer
         const antalEtager = building["byg054AntalEtager"] ?? getBBRValue(building, "antalEtager", /antal.*etager/i);
         const samletAreal = building["byg038SamletBygningsareal"] ?? getBBRValue(building, "samletBygningsareal", /samlet.*bygningsareal/i);
         const boligAreal = building["byg039BygningensSamledeBoligAreal"] ?? getBBRValue(building, "boligareal", /samlede.*bolig.*areal/i);
         const bebyggetAreal = building["byg041BebyggetAreal"] ?? getBBRValue(building, "bebyggedeAreal", /bebygget.*areal/i);
 
-        // Datoer / opdatering
         const opdateringDatoStr = building["datafordelerOpdateringstid"] || null;
         const revisionsDatoStr = building["byg094Revisionsdato"] || null;
         const opdateringDato = opdateringDatoStr ? String(opdateringDatoStr).split("T")[0] : null;
         const revisionsDato = revisionsDatoStr ? String(revisionsDatoStr).split("T")[0] : null;
 
-        // Overskrift for den enkelte bygning
         const summaryTitleParts = [];
         summaryTitleParts.push(`Bygning ${idx + 1}`);
         if (anvTekst) {
@@ -1974,7 +1969,6 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
         }
         const summaryTitle = summaryTitleParts.join(" – ");
 
-        // Detaljeret liste
         let detailsHtml = "<ul>";
         if (bygningsnr != null) {
           detailsHtml += `<li><strong>Bygningsnr:</strong> ${bygningsnr}</li>`;
@@ -2041,7 +2035,7 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
   </details>
 </details>`;
 
-        // --- marker på kortet for bygningen (bygningsnummer som label) ---
+        // Marker på kortet
         let bLat = null;
         let bLon = null;
 
@@ -2086,7 +2080,26 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
         }
       });
 
-      // --- Ejendomsbeliggenhed (Ejendomsdata pr. BFE) ---
+      // ----- TEKNISKE ANLÆG (NYT: separat visning) -----
+      if (tekniskeOnly.length > 0) {
+        html += `<details open>
+  <summary>Tekniske anlæg (${tekniskeOnly.length})</summary>
+`;
+
+        tekniskeOnly.forEach((t, tIdx) => {
+          html += `<details>
+  <summary>Teknisk anlæg ${tIdx + 1}</summary>
+  <details>
+    <summary>Vis rå teknisk anlæg-data</summary>
+    <pre>${JSON.stringify(t, null, 2)}</pre>
+  </details>
+</details>`;
+        });
+
+        html += `</details>`;
+      }
+
+      // --- Ejendomsbeliggenhed (som før) ---
       try {
         const bfeList = collectBfeNumbersFromBuildings(data, bfeNumber);
         if (bfeList && bfeList.length > 0) {
