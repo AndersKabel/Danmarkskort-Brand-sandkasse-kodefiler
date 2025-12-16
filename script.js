@@ -1385,27 +1385,124 @@ async function fetchBBRData(bbrId, bfeNumber) {
           continue;
         }
 
+        async function fetchBBRData(bbrId, bfeNumber) {
+  try {
+    if (!bbrId && !bfeNumber) {
+      console.warn("fetchBBRData kaldt uden husnummerId eller BFE-nummer");
+      return [];
+    }
+
+    const urls = [];
+
+    // 1) Prøv husnummer-id først, hvis vi har et
+    if (bbrId) {
+      urls.push(`${BBR_PROXY}/bygning?husnummer=${encodeURIComponent(bbrId)}`);
+    }
+    // 2) Fald tilbage til BFE-nummer
+    if (bfeNumber) {
+      urls.push(`${BBR_PROXY}/bygning?bfenummer=${encodeURIComponent(bfeNumber)}`);
+    }
+
+    // Prøv husnummer og BFE i rækkefølge
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          console.warn("BBR 2.1 proxy-fejl for URL", url, resp.status);
+          continue;
+        }
+
         const data = await resp.json();
         if (Array.isArray(data) && data.length > 0) {
-          // Filtrér eventuelle flere bygninger for kun at vise én entydig bygning
-          if (data.length > 1) {
-            let primaryList = data.filter(b => {
-              const building = b && b.bygning ? b.bygning : b;
-              const anvKode = building["byg021BygningensAnvendelse"] ?? getBBRCode(building, "bygningsanvendelse", /anvendelse/i);
-              return !(anvKode && Number(anvKode) >= 910 && Number(anvKode) <= 999);
-            });
-            if (primaryList.length === 0) {
-              primaryList = data;
+          // Returnér alle bygninger uden filtrering
+          return data;
+        }
+      } catch (innerErr) {
+        console.warn("BBR fetch-fejl for URL", url, innerErr);
+      }
+    }
+
+    // Hvis ingen bygninger er fundet, prøv Datafordeler via bbr-proxy:
+    // Først via husnummerTilBygningBfe, derefter adresseTilEnhedBfe
+    if (bbrId) {
+      // Fallback 1: husnummerTilBygningBfe
+      try {
+        const bfeResp1 = await fetch(`${BBR_PROXY}/husnummerTilBygningBfe?husnummerId=${encodeURIComponent(bbrId)}`);
+        if (bfeResp1.ok) {
+          const bfeData = await bfeResp1.json();
+          let bfeList = [];
+          const process = (obj) => {
+            const val = findFirstMatchingField(obj, /bfe.*nummer/i);
+            if (val != null) bfeList.push(String(val));
+          };
+          if (Array.isArray(bfeData)) {
+            bfeData.forEach(process);
+          } else if (typeof bfeData === "object") {
+            process(bfeData);
+          }
+          bfeList = Array.from(new Set(bfeList));
+          for (const bfe of bfeList) {
+            try {
+              const bfeRespData = await fetch(`${BBR_PROXY}/bygning?bfenummer=${encodeURIComponent(bfe)}`);
+              if (bfeRespData.ok) {
+                const buildings = await bfeRespData.json();
+                if (Array.isArray(buildings) && buildings.length > 0) {
+                  return buildings;
+                }
+              }
+            } catch (err) {
+              console.warn("BBR BFE-opslag-fejl for", bfe, err);
             }
-            if (primaryList.length > 1) {
-              primaryList.sort((a, b) => {
-                const aB = a && a.bygning ? a.bygning : a;
-                const bB = b && b.bygning ? b.bygning : b;
-                const aArea = Number(aB["byg038SamletBygningsareal"] ?? getBBRValue(aB, "samletBygningsareal", /samlet.*bygningsareal/i)) || 0;
-                const bArea = Number(bB["byg038SamletBygningsareal"] ?? getBBRValue(bB, "samletBygningsareal", /samlet.*bygningsareal/i)) || 0;
-                return bArea - aArea;
-              });
+          }
+        }
+      } catch (err) {
+        console.warn("Fejl ved husnummerTilBygningBfe-fallback:", err);
+      }
+
+      // Fallback 2: adresseTilEnhedBfe
+      try {
+        const bfeResp2 = await fetch(`${BBR_PROXY}/adresseTilEnhedBfe?adresseId=${encodeURIComponent(bbrId)}`);
+        if (bfeResp2.ok) {
+          const bfeData2 = await bfeResp2.json();
+          let bfeList2 = [];
+          const process2 = (obj) => {
+            const val = findFirstMatchingField(obj, /bfe.*nummer/i);
+            if (val != null) bfeList2.push(String(val));
+          };
+          if (Array.isArray(bfeData2)) {
+            bfeData2.forEach(process2);
+          } else if (typeof bfeData2 === "object") {
+            process2(bfeData2);
+          }
+          bfeList2 = Array.from(new Set(bfeList2));
+          for (const bfe of bfeList2) {
+            try {
+              const bfeRespData2 = await fetch(`${BBR_PROXY}/bygning?bfenummer=${encodeURIComponent(bfe)}`);
+              if (bfeRespData2.ok) {
+                const buildings2 = await bfeRespData2.json();
+                if (Array.isArray(buildings2) && buildings2.length > 0) {
+                  return buildings2;
+                }
+              }
+            } catch (err) {
+              console.warn("BBR BFE-opslag-fejl (adresse) for", bfe, err);
             }
+          }
+        }
+      } catch (err) {
+        console.warn("Fejl ved adresseTilEnhedBfe-fallback:", err);
+      }
+    }
+
+    // Ingen bygninger fundet
+    return [];
+  } catch (e) {
+    console.error("BBR fetch error via proxy:", e);
+    return [];
+  }
+}
+
             return [ primaryList[0] ];
           }
           return data;
