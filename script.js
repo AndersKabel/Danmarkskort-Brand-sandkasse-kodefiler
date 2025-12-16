@@ -1,4 +1,3 @@
-
 // EPSG:25832 => WGS84
 proj4.defs("EPSG:25832", "+proj=utm +zone=32 +ellps=GRS80 +datum=ETRS89 +units=m +no_defs");
 
@@ -1857,8 +1856,13 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
 
   fetchBBRData(bbrId, bfeNumber)
     .then(async data => {
+      // Kombinér bygninger med tekniske anlæg fra BBR-proxy
+      const tekniske = await fetchBBRTekniskeAnlaeg(bbrId, bfeNumber);
+      const combined = (Array.isArray(data) ? data : []).concat(
+        Array.isArray(tekniske) ? tekniske : []
+      );
       // Ingen data
-      if (!data || data.length === 0) {
+      if (!combined || combined.length === 0) {
         bbrBox.innerHTML = `
   <div class="bbr-header" style="position: relative;">
     <span class="bbr-title">BBR – bygninger på adressen</span>
@@ -1882,7 +1886,7 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
   <div class="bbr-content">
 `;
 
-      data.forEach((b, idx) => {
+      combined.forEach((b, idx) => {
         // Hvis proxien på et tidspunkt returnerer { bygning: {...} }, så brug bygning-delen.
         const building = (b && b.bygning) ? b.bygning : b;
 
