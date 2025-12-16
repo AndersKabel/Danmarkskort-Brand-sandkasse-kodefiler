@@ -1476,21 +1476,49 @@ async function fetchBBRData(bbrId, bfeNumber) {
 
 async function fetchBBRTekniskeAnlaeg(adresseId, bfeNumber) {
   try {
-    let url;
-
-    // VIGTIGT: tekniske anlæg hentes primært via BFE-nummer
-    if (bfeNumber) {
-      url = `${BBR_PROXY}/tekniskeAnlaeg?bfenummer=${encodeURIComponent(bfeNumber)}`;
-    } else if (adresseId) {
-      url = `${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(adresseId)}`;
-    } else {
+    if (!adresseId && !bfeNumber) {
       return [];
     }
 
-    const resp = await fetch(url);
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    return Array.isArray(data) ? data : [data];
+    const urls = [];
+
+    // 1) Prøv først med samme ID-type som "bygning" virker med i din løsning (husnummer=<id>)
+    if (adresseId) {
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?husnummer=${encodeURIComponent(adresseId)}`);
+    }
+
+    // 2) Fallback: hvis adresseId reelt er adgangsadresse-id i nogle flows
+    if (adresseId) {
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(adresseId)}`);
+    }
+
+    // 3) Fallback: BFE
+    if (bfeNumber) {
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?bfenummer=${encodeURIComponent(bfeNumber)}`);
+    }
+
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          // 400 her er typisk "forkert parameter" – vi prøver næste URL
+          console.warn("BBR tekniskeAnlaeg proxy-fejl for URL", url, resp.status);
+          continue;
+        }
+        const data = await resp.json();
+        if (Array.isArray(data)) {
+          return data;
+        }
+        if (data && typeof data === "object") {
+          return [data];
+        }
+      } catch (innerErr) {
+        console.warn("BBR tekniskeAnlaeg fetch-fejl for URL", url, innerErr);
+      }
+    }
+
+    return [];
   } catch (err) {
     console.warn("Fejl ved hentning af tekniske anlæg:", err);
     return [];
