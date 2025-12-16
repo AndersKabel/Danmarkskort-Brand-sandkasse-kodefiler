@@ -1477,13 +1477,16 @@ async function fetchBBRData(bbrId, bfeNumber) {
 async function fetchBBRTekniskeAnlaeg(adresseId, bfeNumber) {
   try {
     let url;
-    if (adresseId) {
-      url = `${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(adresseId)}`;
-    } else if (bfeNumber) {
+
+    // VIGTIGT: tekniske anlæg hentes primært via BFE-nummer
+    if (bfeNumber) {
       url = `${BBR_PROXY}/tekniskeAnlaeg?bfenummer=${encodeURIComponent(bfeNumber)}`;
+    } else if (adresseId) {
+      url = `${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(adresseId)}`;
     } else {
       return [];
     }
+
     const resp = await fetch(url);
     if (!resp.ok) return [];
     const data = await resp.json();
