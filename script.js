@@ -1473,54 +1473,72 @@ async function fetchBBRData(bbrId, bfeNumber) {
     return [];
   }
 }
-
 async function fetchBBRTekniskeAnlaeg(adresseId, bfeNumber) {
   try {
     if (!adresseId && !bfeNumber) {
+      console.warn("fetchBBRTekniskeAnlaeg kaldt uden adresseId eller bfeNumber");
       return [];
     }
 
     const urls = [];
 
-    // 1) Prøv først med samme ID-type som "bygning" virker med i din løsning (husnummer=<id>)
+    // 1) Forsøg med adresse/husnummer-id (typisk adgangsadresse.id)
     if (adresseId) {
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?husnummerId=${encodeURIComponent(adresseId)}`);
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?husnummerid=${encodeURIComponent(adresseId)}`);
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseId=${encodeURIComponent(adresseId)}`);
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(adresseId)}`);
       urls.push(`${BBR_PROXY}/tekniskeAnlaeg?husnummer=${encodeURIComponent(adresseId)}`);
     }
 
-    // 2) Fallback: hvis adresseId reelt er adgangsadresse-id i nogle flows
-    if (adresseId) {
-      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(adresseId)}`);
-    }
-
-    // 3) Fallback: BFE
+    // 2) Forsøg med BFE-nummer (ejendoms-/BFE-nøgle)
     if (bfeNumber) {
       urls.push(`${BBR_PROXY}/tekniskeAnlaeg?bfenummer=${encodeURIComponent(bfeNumber)}`);
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?bfeNummer=${encodeURIComponent(bfeNumber)}`);
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?bfe=${encodeURIComponent(bfeNumber)}`);
+      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?bfenr=${encodeURIComponent(bfeNumber)}`);
     }
 
     for (let i = 0; i < urls.length; i++) {
       const url = urls[i];
+
       try {
-        const resp = await fetch(url);
+        const resp = await fetch(url, { cache: "no-store" });
         if (!resp.ok) {
-          // 400 her er typisk "forkert parameter" – vi prøver næste URL
-          console.warn("BBR tekniskeAnlaeg proxy-fejl for URL", url, resp.status);
+          console.warn("TekniskeAnlaeg proxy-fejl for URL", url, resp.status, resp.statusText);
           continue;
         }
+
         const data = await resp.json();
+
+        // Normaliser til array, så resten af koden kan arbejde stabilt
         if (Array.isArray(data)) {
-          return data;
+          if (data.length > 0) return data;
+          continue;
         }
+
+        if (data && Array.isArray(data.results)) {
+          if (data.results.length > 0) return data.results;
+          continue;
+        }
+
+        if (data && Array.isArray(data.items)) {
+          if (data.items.length > 0) return data.items;
+          continue;
+        }
+
+        // Hvis der kommer et enkelt objekt, returnér som [obj]
         if (data && typeof data === "object") {
           return [data];
         }
       } catch (innerErr) {
-        console.warn("BBR tekniskeAnlaeg fetch-fejl for URL", url, innerErr);
+        console.warn("TekniskeAnlaeg fetch-fejl for URL", url, innerErr);
       }
     }
 
     return [];
-  } catch (err) {
-    console.warn("Fejl ved hentning af tekniske anlæg:", err);
+  } catch (e) {
+    console.error("Fejl i fetchBBRTekniskeAnlaeg:", e);
     return [];
   }
 }
