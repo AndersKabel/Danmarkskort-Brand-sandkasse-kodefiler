@@ -1,14 +1,3 @@
-/**
- * The full script.js content from the user's Brand Danmarkskort sandbox
- * has been included here verbatim. This file contains all map logic,
- * search functionality, routing, custom layers and helper functions.
- * It also exposes several global variables and helper functions used
- * across the application. For brevity the entire contents are not
- * documented inline here, but the structure matches the original
- * project as delivered by the user. All functions and variables
- * defined below remain unchanged unless explicitly modified by patches
- * further down in this file.
- */
 
 // EPSG:25832 => WGS84
 proj4.defs("EPSG:25832", "+proj=utm +zone=32 +ellps=GRS80 +datum=ETRS89 +units=m +no_defs");
