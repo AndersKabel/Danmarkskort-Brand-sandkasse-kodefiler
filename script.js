@@ -1476,69 +1476,46 @@ async function fetchBBRData(bbrId, bfeNumber) {
 async function fetchBBRTekniskeAnlaeg(adresseId, bfeNumber) {
   try {
     if (!adresseId && !bfeNumber) {
-      console.warn("fetchBBRTekniskeAnlaeg kaldt uden adresseId eller bfeNumber");
       return [];
     }
 
     const urls = [];
 
-    // 1) Forsøg med adresse/husnummer-id (typisk adgangsadresse.id)
+    // 1) Korrekt parameter til worker: adgangsadresseid
     if (adresseId) {
-      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?husnummerId=${encodeURIComponent(adresseId)}`);
-      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?husnummerid=${encodeURIComponent(adresseId)}`);
-      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseId=${encodeURIComponent(adresseId)}`);
       urls.push(`${BBR_PROXY}/tekniskeAnlaeg?adgangsadresseid=${encodeURIComponent(adresseId)}`);
-      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?husnummer=${encodeURIComponent(adresseId)}`);
     }
 
-    // 2) Forsøg med BFE-nummer (ejendoms-/BFE-nøgle)
+    // 2) Fallback: BFE (hvis tekniske anlæg ikke kan hentes direkte på adgangsadresse)
     if (bfeNumber) {
       urls.push(`${BBR_PROXY}/tekniskeAnlaeg?bfenummer=${encodeURIComponent(bfeNumber)}`);
-      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?bfeNummer=${encodeURIComponent(bfeNumber)}`);
-      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?bfe=${encodeURIComponent(bfeNumber)}`);
-      urls.push(`${BBR_PROXY}/tekniskeAnlaeg?bfenr=${encodeURIComponent(bfeNumber)}`);
     }
 
     for (let i = 0; i < urls.length; i++) {
       const url = urls[i];
-
       try {
-        const resp = await fetch(url, { cache: "no-store" });
+        const resp = await fetch(url);
         if (!resp.ok) {
-          console.warn("TekniskeAnlaeg proxy-fejl for URL", url, resp.status, resp.statusText);
+          console.warn("BBR tekniskeAnlaeg proxy-fejl for URL", url, resp.status);
           continue;
         }
 
         const data = await resp.json();
 
-        // Normaliser til array, så resten af koden kan arbejde stabilt
         if (Array.isArray(data)) {
-          if (data.length > 0) return data;
-          continue;
+          return data;
         }
-
-        if (data && Array.isArray(data.results)) {
-          if (data.results.length > 0) return data.results;
-          continue;
-        }
-
-        if (data && Array.isArray(data.items)) {
-          if (data.items.length > 0) return data.items;
-          continue;
-        }
-
-        // Hvis der kommer et enkelt objekt, returnér som [obj]
         if (data && typeof data === "object") {
           return [data];
         }
       } catch (innerErr) {
-        console.warn("TekniskeAnlaeg fetch-fejl for URL", url, innerErr);
+        console.warn("BBR tekniskeAnlaeg fetch-fejl for URL", url, innerErr);
       }
     }
 
     return [];
-  } catch (e) {
-    console.error("Fejl i fetchBBRTekniskeAnlaeg:", e);
+  } catch (err) {
+    console.warn("Fejl ved hentning af tekniske anlæg:", err);
     return [];
   }
 }
