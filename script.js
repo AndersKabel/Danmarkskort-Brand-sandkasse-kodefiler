@@ -2104,17 +2104,20 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
           ejendomsrelationOnly.push(tmpEjd);
         }
       }
-
-      // Enhed: vi prøver først på husnummer (bbrId), og hvis det ikke giver noget, forsøger vi på BFE.
+      // Enhed: brug adresseIdentificerer (adresse-id) når det findes.
+      // Det virker både for almindelige huse og for adresser med etage/dør.
       let enhedOnly = [];
-      if (bbrId) {
-        const tmpEnhed = await fetchBBREnhed({ husnummer: bbrId });
+
+      if (adresseId) {
+        const tmpEnhed = await fetchBBREnhed({ adresseIdentificerer: adresseId });
         if (Array.isArray(tmpEnhed) && tmpEnhed.length > 0) {
           enhedOnly = enhedOnly.concat(tmpEnhed);
         } else if (tmpEnhed && typeof tmpEnhed === "object") {
           enhedOnly.push(tmpEnhed);
         }
       }
+
+      // Fallback: hvis vi stadig intet har, prøv BFE (kan virke i nogle datasæt)
       if (enhedOnly.length === 0 && bfeNumber) {
         const tmpEnhed2 = await fetchBBREnhed({ bfenummer: bfeNumber });
         if (Array.isArray(tmpEnhed2) && tmpEnhed2.length > 0) {
