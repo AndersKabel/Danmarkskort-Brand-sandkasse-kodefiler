@@ -2080,11 +2080,15 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
       let tekniske = [];
       for (let i = 0; i < bfeListForTekniske.length; i++) {
         const bfe = bfeListForTekniske[i];
-        const tmp = await fetchBBRTekniskeAnlaeg(null, bfe);
+        // Brug både adresseId (adgangsadresseid) og BFE som parametre.
+        // fetchBBRTekniskeAnlaeg håndterer selv at prøve adgangsadresseid først
+        // og derefter bfenummer.
+        const tmp = await fetchBBRTekniskeAnlaeg(adresseId, bfe);
         if (Array.isArray(tmp) && tmp.length > 0) {
           tekniske = tekniske.concat(tmp);
         }
       }
+
       // ----- GRUND / ENHED / EJENDOMSRELATION -----
       // Disse kald bruger de nye helper-funktioner fra trin 2.
       // Vi forsøger primært på BFE (fordi det typisk er mest stabilt på tværs af BBR-objekter).
