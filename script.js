@@ -2048,6 +2048,13 @@ function hideBBRInfo() {
  * Hvis ingen data findes, vises en besked.
  */
 function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
+    // Bagudkompatibilitet: gammel signatur var (bbrId, fallbackLat, fallbackLon, bfeNumber)
+  if (arguments.length === 4) {
+    bfeNumber = fallbackLon;
+    fallbackLon = fallbackLat;
+    fallbackLat = adresseId;
+    adresseId = null;
+  }
   const bbrBox = document.getElementById("bbrInfoBox");
   if (!bbrBox) return;
 
