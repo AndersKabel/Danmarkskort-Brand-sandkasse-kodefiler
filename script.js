@@ -1986,6 +1986,51 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
           tekniske = tekniske.concat(tmp);
         }
       }
+      // ----- GRUND / ENHED / EJENDOMSRELATION -----
+      // Disse kald bruger de nye helper-funktioner fra trin 2.
+      // Vi forsøger primært på BFE (fordi det typisk er mest stabilt på tværs af BBR-objekter).
+      const bfeListForGrundOgEjd = collectBfeNumbersFromBuildings(data, bfeNumber);
+
+      let grundOnly = [];
+      for (let i = 0; i < bfeListForGrundOgEjd.length; i++) {
+        const bfe = bfeListForGrundOgEjd[i];
+        const tmpGrund = await fetchBBRGrund({ bfenummer: bfe });
+        if (Array.isArray(tmpGrund) && tmpGrund.length > 0) {
+          grundOnly = grundOnly.concat(tmpGrund);
+        } else if (tmpGrund && typeof tmpGrund === "object") {
+          grundOnly.push(tmpGrund);
+        }
+      }
+
+      let ejendomsrelationOnly = [];
+      for (let i = 0; i < bfeListForGrundOgEjd.length; i++) {
+        const bfe = bfeListForGrundOgEjd[i];
+        const tmpEjd = await fetchBBREjendomsrelation({ bfenummer: bfe });
+        if (Array.isArray(tmpEjd) && tmpEjd.length > 0) {
+          ejendomsrelationOnly = ejendomsrelationOnly.concat(tmpEjd);
+        } else if (tmpEjd && typeof tmpEjd === "object") {
+          ejendomsrelationOnly.push(tmpEjd);
+        }
+      }
+
+      // Enhed: vi prøver først på husnummer (bbrId), og hvis det ikke giver noget, forsøger vi på BFE.
+      let enhedOnly = [];
+      if (bbrId) {
+        const tmpEnhed = await fetchBBREnhed({ husnummer: bbrId });
+        if (Array.isArray(tmpEnhed) && tmpEnhed.length > 0) {
+          enhedOnly = enhedOnly.concat(tmpEnhed);
+        } else if (tmpEnhed && typeof tmpEnhed === "object") {
+          enhedOnly.push(tmpEnhed);
+        }
+      }
+      if (enhedOnly.length === 0 && bfeNumber) {
+        const tmpEnhed2 = await fetchBBREnhed({ bfenummer: bfeNumber });
+        if (Array.isArray(tmpEnhed2) && tmpEnhed2.length > 0) {
+          enhedOnly = enhedOnly.concat(tmpEnhed2);
+        } else if (tmpEnhed2 && typeof tmpEnhed2 === "object") {
+          enhedOnly.push(tmpEnhed2);
+        }
+      }
 
       const buildingsOnly = Array.isArray(data) ? data : [];
       const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
