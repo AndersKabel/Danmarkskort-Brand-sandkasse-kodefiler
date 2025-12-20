@@ -2386,38 +2386,56 @@ function renderBBRInfo(bbrId, fallbackLat, fallbackLon, bfeNumber) {
       } catch (e) {
         console.error("Fejl ved hentning af Ejendomsbeliggenhed:", e);
       }
-      // ----- GRUND -----
-      if (Array.isArray(grundOnly) && grundOnly.length > 0) {
-        html += "<details open><summary><strong>Grund (" + String(grundOnly.length) + ")</strong></summary>";
-        grundOnly.forEach((g, idx) => {
-          html += "<details style=\"margin-left:10px;\"><summary>Grund " + String(idx + 1) + "</summary>";
-          html += "<details><summary>Vis rå Grund-data</summary><pre>" + JSON.stringify(g, null, 2) + "</pre></details>";
-          html += "</details>";
-        });
-        html += "</details>";
-      }
+      // ----- GRUND (pæn visning + rå data) -----
+if (Array.isArray(grundOnly) && grundOnly.length > 0) {
+  html += "<details open><summary><strong>Grund (" + String(grundOnly.length) + ")</strong></summary>";
 
-      // ----- ENHED -----
-      if (Array.isArray(enhedOnly) && enhedOnly.length > 0) {
-        html += "<details><summary><strong>Enheder (" + String(enhedOnly.length) + ")</strong></summary>";
-        enhedOnly.forEach((e, idx) => {
-          html += "<details style=\"margin-left:10px;\"><summary>Enhed " + String(idx + 1) + "</summary>";
-          html += "<details><summary>Vis rå Enhed-data</summary><pre>" + JSON.stringify(e, null, 2) + "</pre></details>";
-          html += "</details>";
-        });
-        html += "</details>";
-      }
+  grundOnly.forEach((g, idx) => {
+    html += "<details style=\"margin-left:10px;\"><summary>Grund " + String(idx + 1) + "</summary>";
 
-      // ----- EJENDOMSRELATION -----
-      if (Array.isArray(ejendomsrelationOnly) && ejendomsrelationOnly.length > 0) {
-        html += "<details><summary><strong>Ejendomsrelation (" + String(ejendomsrelationOnly.length) + ")</strong></summary>";
-        ejendomsrelationOnly.forEach((er, idx) => {
-          html += "<details style=\"margin-left:10px;\"><summary>Ejendomsrelation " + String(idx + 1) + "</summary>";
-          html += "<details><summary>Vis rå Ejendomsrelation-data</summary><pre>" + JSON.stringify(er, null, 2) + "</pre></details>";
-          html += "</details>";
-        });
-        html += "</details>";
-      }
+    const pairs = summarizeGrund(g);
+    html += renderKeyValueList(pairs);
+
+    html += "<details><summary>Vis rå Grund-data</summary><pre>" + escapeHtml(JSON.stringify(g, null, 2)) + "</pre></details>";
+    html += "</details>";
+  });
+
+  html += "</details>";
+}
+
+// ----- ENHED (pæn visning + rå data) -----
+if (Array.isArray(enhedOnly) && enhedOnly.length > 0) {
+  html += "<details><summary><strong>Enheder (" + String(enhedOnly.length) + ")</strong></summary>";
+
+  enhedOnly.forEach((e, idx) => {
+    html += "<details style=\"margin-left:10px;\"><summary>Enhed " + String(idx + 1) + "</summary>";
+
+    const pairs = summarizeEnhed(e);
+    html += renderKeyValueList(pairs);
+
+    html += "<details><summary>Vis rå Enhed-data</summary><pre>" + escapeHtml(JSON.stringify(e, null, 2)) + "</pre></details>";
+    html += "</details>";
+  });
+
+  html += "</details>";
+}
+
+// ----- EJENDOMSRELATION (pæn visning + rå data) -----
+if (Array.isArray(ejendomsrelationOnly) && ejendomsrelationOnly.length > 0) {
+  html += "<details><summary><strong>Ejendomsrelation (" + String(ejendomsrelationOnly.length) + ")</strong></summary>";
+
+  ejendomsrelationOnly.forEach((er, idx) => {
+    html += "<details style=\"margin-left:10px;\"><summary>Ejendomsrelation " + String(idx + 1) + "</summary>";
+
+    const pairs = summarizeEjendomsrelation(er);
+    html += renderKeyValueList(pairs);
+
+    html += "<details><summary>Vis rå Ejendomsrelation-data</summary><pre>" + escapeHtml(JSON.stringify(er, null, 2)) + "</pre></details>";
+    html += "</details>";
+  });
+
+  html += "</details>";
+}
 
       html += "</div>"; // .bbr-content slut
 
