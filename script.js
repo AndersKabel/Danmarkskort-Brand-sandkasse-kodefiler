@@ -6,6 +6,98 @@ const VD_PROXY = "https://vd-proxy.anderskabel8.workers.dev";
 
 // Cloudflare proxy til BBR (bygning)
 const BBR_PROXY = "https://bbr-proxy.anderskabel8.workers.dev";
+// Hjælper: hent BBR "grund" via Cloudflare BBR-proxyen
+async function fetchBBRGrund(paramsObj) {
+  try {
+    const qs = new URLSearchParams();
+    Object.keys(paramsObj || {}).forEach((k) => {
+      const v = paramsObj[k];
+      if (v !== undefined && v !== null && String(v).trim() !== "") {
+        qs.set(k, v);
+      }
+    });
+
+    const url = `${BBR_PROXY}/grund?${qs.toString()}`;
+
+    const resp = await fetch(url, { method: "GET" });
+    const text = await resp.text();
+
+    if (!resp.ok) {
+      throw new Error(`fetchBBRGrund failed: ${resp.status} ${text}`);
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error(`fetchBBRGrund invalid JSON: ${text}`);
+    }
+  } catch (err) {
+    console.warn("Fejl i fetchBBRGrund:", err);
+    return [];
+  }
+}
+
+// Hjælper: hent BBR "enhed" via Cloudflare BBR-proxyen
+async function fetchBBREnhed(paramsObj) {
+  try {
+    const qs = new URLSearchParams();
+    Object.keys(paramsObj || {}).forEach((k) => {
+      const v = paramsObj[k];
+      if (v !== undefined && v !== null && String(v).trim() !== "") {
+        qs.set(k, v);
+      }
+    });
+
+    const url = `${BBR_PROXY}/enhed?${qs.toString()}`;
+
+    const resp = await fetch(url, { method: "GET" });
+    const text = await resp.text();
+
+    if (!resp.ok) {
+      throw new Error(`fetchBBREnhed failed: ${resp.status} ${text}`);
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error(`fetchBBREnhed invalid JSON: ${text}`);
+    }
+  } catch (err) {
+    console.warn("Fejl i fetchBBREnhed:", err);
+    return [];
+  }
+}
+
+// Hjælper: hent BBR "ejendomsrelation" via Cloudflare BBR-proxyen
+async function fetchBBREjendomsrelation(paramsObj) {
+  try {
+    const qs = new URLSearchParams();
+    Object.keys(paramsObj || {}).forEach((k) => {
+      const v = paramsObj[k];
+      if (v !== undefined && v !== null && String(v).trim() !== "") {
+        qs.set(k, v);
+      }
+    });
+
+    const url = `${BBR_PROXY}/ejendomsrelation?${qs.toString()}`;
+
+    const resp = await fetch(url, { method: "GET" });
+    const text = await resp.text();
+
+    if (!resp.ok) {
+      throw new Error(`fetchBBREjendomsrelation failed: ${resp.status} ${text}`);
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error(`fetchBBREjendomsrelation invalid JSON: ${text}`);
+    }
+  } catch (err) {
+    console.warn("Fejl i fetchBBREjendomsrelation:", err);
+    return [];
+  }
+}
 
 /*
  * OpenRouteService integration
