@@ -2137,7 +2137,32 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
           enhedOnly.push(tmpEnhed2);
         }
       }
-
+// --- EKSTRA FALLBACK: hent bygninger via BFE fra enheder ---
+      // Hvis der (endnu) ikke er fundet bygninger via husnummer/BFE,
+      // men vi HAR enheder, så prøv at hente bygninger via BFE på enhederne.
+      let buildingsOnly = Array.isArray(data) ? data : [];
+      if (buildingsOnly.length === 0 && Array.isArray(enhedOnly) && enhedOnly.length > 0) {
+        const bfeFromEnhederSet = new Set();
+        enhedOnly.forEach(e => {
+          const bfeVal = findFirstMatchingField(e, /bfe.*nummer/i);
+          if (bfeVal != null && String(bfeVal).trim() !== "") {
+            bfeFromEnhederSet.add(String(bfeVal).trim());
+          }
+        });
+        const bfeFromEnheder = Array.from(bfeFromEnhederSet);
+        for (const bfe of bfeFromEnheder) {
+          try {
+            const extraBuildings = await fetchBBRData(null, bfe);
+            if (Array.isArray(extraBuildings) && extraBuildings.length > 0) {
+              buildingsOnly = buildingsOnly.concat(extraBuildings);
+            }
+          } catch (err) {
+            console.warn("Ekstra BBR-opslag via BFE fra enhed fejlede for", bfe, err);
+          }
+        }
+      }
+      const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
+      
       const buildingsOnly = Array.isArray(data) ? data : [];
       const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
       // Hvis der slet ingen BBR‑objekter er (hverken bygninger,
