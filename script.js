@@ -2142,6 +2142,8 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
       // men vi HAR enheder, så prøv at hente bygninger via BFE på enhederne.
       let buildingsOnly = Array.isArray(data) ? data : [];
       if (buildingsOnly.length === 0 && Array.isArray(enhedOnly) && enhedOnly.length > 0) {
+        console.log("Fallback: prøver bygninger via BFE fra enheder", enhedOnly);
+        
         const bfeFromEnhederSet = new Set();
         enhedOnly.forEach(e => {
           const bfeVal = findFirstMatchingField(e, /bfe.*nummer/i);
