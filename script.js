@@ -1822,6 +1822,7 @@ const BBR_BYGNINGSANVENDELSE = {
   217: "Maskinhus, garage mv.",
   218: "Lade til halm, hø mv.",
   219: "Anden bygning til landbrug mv.",
+  220: "Bygning til industri (ældre kode)",
   221: "Bygning til industri med integreret produktionsapparat",
   222: "Bygning til industri uden integreret produktionsapparat",
   223: "Værksted",
