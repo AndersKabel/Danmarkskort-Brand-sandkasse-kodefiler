@@ -2229,10 +2229,52 @@ function renderBBRInfo(bbrId, adresseId, fallbackLat, fallbackLon, bfeNumber) {
               }
             }
           }
-        } catch (err) {
-          console.warn("Fejl i Ejendomsbeliggenhed-fallback:", err);
+            } catch (err) {
+      console.warn("Fejl i Ejendomsbeliggenhed-fallback:", err);
+    }
+  }
+
+  // --- EKSTRA: bygninger via grund-id (bygning?grund) ---
+  // Hvis vi har fundet grunde (grundOnly), så prøv også at hente bygninger
+  // ved hjælp af grundens id (samme mønster som BBR.dk bruger).
+  if (Array.isArray(grundOnly) && grundOnly.length > 0) {
+    let extraBuildingsFromGrund = [];
+
+    for (let i = 0; i < grundOnly.length; i++) {
+      const g = grundOnly[i];
+
+      // Prøv at finde et grund-id (lokalId/id) i objektet
+      const grundId =
+        pickFirst(g, [/id_lokalId/i, /idlokalid/i, /id/i]) ||
+        (g.grund && (g.grund.id_lokalId || g.grund.id));
+
+      if (!grundId) continue;
+
+      try {
+        const qs = new URLSearchParams();
+        qs.set("grund", grundId);
+        qs.set("pagesize", "9999");
+        qs.set("page", "1");
+
+        const resp = await fetch(`${BBR_PROXY}/bygning?${qs.toString()}`);
+        if (!resp.ok) {
+          console.warn("bygning?grund-fejl for", grundId, resp.status);
+          continue;
         }
+
+        const tmpByg = await resp.json();
+        if (Array.isArray(tmpByg) && tmpByg.length > 0) {
+          extraBuildingsFromGrund = extraBuildingsFromGrund.concat(tmpByg);
+        }
+      } catch (e) {
+        console.warn("Fejl ved bygning?grund for", grundId, e);
       }
+    }
+
+    if (extraBuildingsFromGrund.length > 0) {
+      buildingsOnly = buildingsOnly.concat(extraBuildingsFromGrund);
+    }
+  }
 
       const tekniskeOnly = Array.isArray(tekniske) ? tekniske : [];
 
