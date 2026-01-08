@@ -3454,6 +3454,17 @@ function doSearch(query, listElement) {
               //  - adresseData giver adgang til husnummerId til BBR
               //  - obj.tekst bruges som visnings-tekst (enheds-adresse)
               updateInfoBox(adresseData, lat, lon, obj.tekst);
+              // NYT: hent og vis BBR-data (bygninger, tekniske anlæg, ejendomsrelationer mm.)
+              // bbrId = husnummerId (adgangsadresse-id)
+              // adresseId = adresseData.id (enheds-adresse-id)
+              const bbrId     = adresseData.husnummerId || null;
+              const adresseId = adresseData.id || null;
+              const bfeNumber = extractBfeNumberFromAdresse(adresseData) || null;
+              if (bbrId || bfeNumber) {
+                renderBBRInfo(bbrId, adresseId, lat, lon, bfeNumber);
+              } else {
+                hideBBRInfo();
+              }
 
               resultsList.innerHTML = "";
               resultsList.style.display = "none";
